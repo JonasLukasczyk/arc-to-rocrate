@@ -4,13 +4,14 @@
 const fs = require('fs');
 const path = require('path');
 
-const intputPath = process.argv[2] ? process.argv[2] : './';
+const intputPath = process.argv[2] || '';
 
 const arcJSONPathSuffix = '.arc/Json/isa.investigation.json';
-const root = path.isAbsolute(intputPath) ? intputPath : process.cwd() +'/'+ intputPath;
+const root = path.isAbsolute(intputPath) ? intputPath : `${process.cwd()}/${intputPath}`;
+
+console.log(`Generating 'ro-crate-metadata.json' file for '${root}' `);
 
 const arcJSONPath = root+'/'+arcJSONPathSuffix;
-
 if( !fs.existsSync(arcJSONPath) ){
   console.error(`Directory '${root}' contains no '${arcJSONPathSuffix}' file.`);
   process.exit();
@@ -19,39 +20,39 @@ if( !fs.existsSync(arcJSONPath) ){
 const arcJSON = JSON.parse(fs.readFileSync(arcJSONPath));
 
 const roc = {
-  "@context": "https://w3id.org/ro/crate/1.1/context",
-  "@graph": {
+  '@context': 'https://w3id.org/ro/crate/1.1/context',
+  '@graph': {
 
-    "ro-crate-metadata.json" : {
-        "@type": "CreativeWork",
-        "@id": "ro-crate-metadata.json",
-        "conformsTo": {"@id": "https://w3id.org/ro/crate/1.1"},
-        "about": {"@id": "./"},
-        "description": "RO-Crate Metadata File Descriptor"
+    'ro-crate-metadata.json' : {
+        '@type': 'CreativeWork',
+        '@id': 'ro-crate-metadata.json',
+        'conformsTo': {'@id': 'https://w3id.org/ro/crate/1.1'},
+        'about': {'@id': './'},
+        'description': 'RO-Crate Metadata File Descriptor'
     },
 
-    "./" : {
-      "@id": "./",
-      "@type": "Dataset",
-      "author": [],
-      "citation": [],
-      "hasPart": [
+    './' : {
+      '@id': './',
+      '@type': 'Dataset',
+      'author': [],
+      'citation': [],
+      'hasPart': [
         {
-          "@id": "assays/"
+          '@id': 'assays/'
         }
       ]
     },
 
-    "assays/" : {
-      "name": "assays",
-      "@id": "assays/",
-      "@type": "Dataset",
-      "hasPart": []
+    'assays/' : {
+      'name': 'assays',
+      '@id': 'assays/',
+      '@type': 'Dataset',
+      'hasPart': []
     }
   }
 };
 
-// Note that all @id identifiers must be valid URI references, care must be taken to express any relative paths using / separator, correct casing, and escape special characters like space (%20) and percent (%25), for instance a File Data Entity from the Windows path Results and Diagrams\almost-50%.png becomes "@id": "Results%20and%20Diagrams/almost-50%25.png" in the RO-Crate JSON-LD.
+// Note that all @id identifiers must be valid URI references, care must be taken to express any relative paths using / separator, correct casing, and escape special characters like space (%20) and percent (%25), for instance a File Data Entity from the Windows path Results and Diagrams\almost-50%.png becomes '@id': 'Results%20and%20Diagrams/almost-50%25.png' in the RO-Crate JSON-LD.
 const toValidId = text => encodeURI(text);
 
 const toRocPerson = data => {
@@ -64,22 +65,22 @@ const toRocPerson = data => {
     dataJson = data;
   }
 
-  rocPerson['name'] = data.firstName+" "+data.lastName;
-  rocPerson['@type'] = "Person";
+  rocPerson['name'] = data.firstName+' '+data.lastName;
+  rocPerson['@type'] = 'Person';
   rocPerson['@id'] = toValidId(
-    data.hasOwnProperty("doi") ? data.doi : rocPerson['name']
+    data.hasOwnProperty('doi') ? data.doi : rocPerson['name']
   );
 
   return rocPerson;
 };
 
 const getRef = id => {
-  return {"@id": typeof id==='object' ? id["@id"] : id};
+  return {'@id': typeof id==='object' ? id['@id'] : id};
 };
 
 const graph = roc['@graph'];
 const addNode = obj => {
-  graph[obj["@id"]] = obj;
+  graph[obj['@id']] = obj;
 };
 const rootDataEntity = graph['./'];
 
@@ -97,13 +98,13 @@ rootDataEntity.description = arcJSON.description;
 rootDataEntity.datePublished = new Date(arcJSON.publicReleaseDate).toISOString();
 
 // license: SHOULD link to a Contextual Entity in the RO-Crate Metadata File with a name and description. MAY have a URI (eg for Creative Commons or Open Source licenses). MAY, if necessary be a textual description of how the RO-Crate may be used.
-rootDataEntity.license = "TODO";
+rootDataEntity.license = 'TODO';
 
 // add arc authors
 for(let person of arcJSON.people){
   rootDataEntity.author.push(
     getRef(
-      person.orcid ? person.orcid : "MISSING_ORCID:"+person.firstName+" "+person.lastName
+      person.orcid ? person.orcid : `MISSING_ORCID:${person.firstName} ${person.lastName}`
     )
   );
 }
@@ -121,10 +122,10 @@ for(let study of arcJSON.studies){
     // TODO: filename currently encodes filepaths incorrectly via backslashes
     const id = toValidId(assay.filename.split('/')[0]);
     const rocAssay = {
-      "@id": id,
-      "@type": "Dataset",
-      "name": 'TODO',
-      "description": 'TODO'
+      '@id': id,
+      '@type': 'Dataset',
+      'name': 'TODO',
+      'description': 'TODO'
     };
     graph['assays/'].hasPart.push(getRef(rocAssay));
     addNode(rocAssay);
@@ -141,4 +142,4 @@ const finalizeRoc = roc=>{
 finalizeRoc(roc);
 
 // write file
-fs.writeFileSync(root+'/roc.json', JSON.stringify(roc,null,1), 'UTF-8');
+fs.writeFileSync(`${root}/ro-crate-metadata.json`, JSON.stringify(roc,null,1), 'UTF-8');
