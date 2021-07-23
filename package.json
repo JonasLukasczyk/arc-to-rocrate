@@ -1,0 +1,11 @@
+{
+  "name": "arc-to-rocrate",
+  "version": "1.0.0",
+  "description": "A script that generates for an arc the ro-crate-metadata.json file required by the research object crate specification.",
+  "main": "cli.js",
+  "bin": {
+    "arc-to-roc": "./cli.js"
+  },
+  "author": "Jonas Lukasczyk",
+  "license": "TODO"
+}
